@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Mon Jeu de Plateforme</title>
+	<style>
+		body{margin: 0; overflow: hidden; background: #222;}
+		canvas{display: block; background: #87CEEB; margin: 20px auto; border: 4px solid #fff;}
+	</style>
+</head>
+</body>
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+
+//---CONFIGURATION---
+canvas.width=800;
+canvas.heigh=400;
+
+const config={
+	gravite: 0.8,
+	friction: 0.8,
+	vitesseSaut:-15,
+	vitesseCourse:5
+}
+
+const touches={};
+const plateformes=[
+	{x:0, y:380, w:800, h:20}, //Sol
+	{x:200, y:300, w:150, h:20}, //Plateforme 1
+	{x:450, y:220, w:150, h:20}, //Plateforme 2
+	{x:150, y:150, w:100, h:20}, //Plateforme 3
+
+];
+
+const joueur={
+	x:50, y:300, w:30, h:30,
+	vx:0, vy:0,
+	auSol:false,
+	couleur:'#FF5733'
+
+};
+
+//---ENTREES CLAVIER---
+window.addEventListener('keydown',e=>touches[e.code]=true);
+window.addEventListener('keyup',e=>touches[e.code]=false);
+
+//---LOGIQUE DE COLLISION---
+function verifierCollision(){
+	joueur.auSol=false;
+	for (let p of plateformes){
+		//Collision simples AABB
+		// Ta ligne 55 devrait ressembler à ceci :
+		if (joueur.x < p.x + p.w && joueur.x + joueur.w > p.x &&
+        joueur.y < p.y + p.h && joueur.y + joueur.h > p.y) { // <-- Vérifie bien le IF et les parenthèses
+
+			//Si le joueur tombe sur le dessus de la plateforme
+			if(joueur.vy>0 && joueur.y+joueur.h-joueur.vy<=p.y){
+				joueur.vy=0;
+				joueur.y=p.y-joueur.h;
+				joueur.auSol=true;
+			}
+		}
+	}
+}
+
+//---BOUCLE DE JEU--
+function update(){
+	//Mouvement Horizontal
+	if (touches['ArrowRight'])joueur.vx=config.vitesseCourse;
+	else if (touches['ArrowLeft'])joueur.vx=-config.vitesseCourse;
+	else joueur.vx*=config.friction;
+
+	//Saut
+	if(touches['Space'] && joueur.auSol){
+		joueur.vy=config.vitesseSaut;
+		joueur.auSol=false;
+	}
+
+//Physique
+joueur.vy+=config.gravite;
+joueur.x+=joueur.vx;
+joueur.y+=joueur.vy;
+
+//Collision
+verifierCollision();
+
+//Limites de l'écran (gauche/droite)
+if (joueur.x<0)joueur.x=0;
+if (joueur.x+joueur.w>canvas.width)joueur.x=canvas.width-joueur.w;
+
+dessiner();
+requestAnimationFrame(update);
+
+}
+
+//---DESSIN---
+function dessiner(){
+	ctx.clearRect(0,0, canvas.width, canvas.height); //Nettoyage
+
+	//Dessiner les plateformes
+	ctx.fillStyle='#444'
+	plateformes.forEach(p=>ctx.fillRect(p.x, p.y, p.w, p.h,));
+
+	//Dessiner le joueur
+	ctx.fillStyle=joueur.couleur;
+	ctx.fillRect(joueur.x, joueur.y, joueur.w, joueur.h);
+}
+
+//Lancement du jeu
+update();
+</script>
+</body>
+</html>
